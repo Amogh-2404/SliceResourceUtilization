@@ -1,0 +1,157 @@
+# Simulation Parameters
+# Based on Table 2 from the paper
+
+# Physical Network Configuration
+substrate_network:
+  # Number of physical nodes
+  num_nodes_options: [50, 100, 150]
+  default_num_nodes: 100
+
+  # Waxman topology parameters
+  connection_probability: 0.5
+
+  # Resource ranges
+  cpu_capacity:
+    min: 50
+    max: 100
+    distribution: "uniform"
+
+  bandwidth_capacity:
+    min: 50
+    max: 100
+    distribution: "uniform"
+
+  # Physical area for node placement
+  area_size:
+    width: 500
+    height: 500
+
+  # Topology generation
+  topology_model: "waxman"  # or "brite"
+  waxman_alpha: 0.5
+  waxman_beta: 0.2
+
+# Slice Request Configuration
+slice_requests:
+  # Total number of requests in simulation
+  total_requests: 2000
+
+  # Arrival process (Poisson)
+  arrival_rates: [0.02, 0.04, 0.06, 0.08, 0.1]
+  default_arrival_rate: 0.04  # 4 requests per 100 time units
+
+  # Lifetime (Exponential distribution)
+  average_lifetime: 500  # time units
+
+  # Topology parameters
+  num_nodes:
+    min: 2
+    max: 10
+    distribution: "uniform_int"
+
+  # Link connection probabilities
+  connection_probabilities: [0.2, 0.5, 0.8]
+  default_connection_probability: 0.5
+
+  # Resource demands
+  cpu_demand:
+    min: 1
+    max: 20
+    distribution: "uniform"
+
+  bandwidth_demand:
+    min: 1
+    max: 20
+    distribution: "uniform"
+
+  # Location constraints
+  max_location_deviation: 80  # Maximum distance from expected location
+
+# Algorithm Parameters
+algorithms:
+  # RT-CSP+ (with minMaxBWUtilHops strategy)
+  rt_csp_plus:
+    name: "RT-CSP+"
+    alpha: 0.5  # Weight for local attributes
+    beta: 0.5   # Weight for global attributes
+    k: 3        # Number of shortest paths
+    epsilon: 1.0e-5  # Small constant to prevent division by zero
+    use_minmax_strategy: true
+
+  # RT-CSP (basic k-shortest path)
+  rt_csp:
+    name: "RT-CSP"
+    alpha: 0.5
+    beta: 0.5
+    k: 3
+    epsilon: 1.0e-5
+    use_minmax_strategy: false
+
+# Simulation Control
+simulation:
+  # Random seed for reproducibility
+  random_seed: 42
+
+  # Logging
+  log_level: "INFO"
+  log_interval: 1000  # Log progress every N time units
+
+  # Output
+  save_results: true
+  results_dir: "results/data"
+  plots_dir: "results/plots"
+
+  # Performance
+  parallel_runs: 1
+  num_repetitions: 10  # Number of simulation runs for statistical analysis
+
+# Experiment Configurations
+experiments:
+  # Experiment 1: Base case (Figure 2, 3)
+  base_case:
+    substrate_nodes: 100
+    arrival_rate: 0.04
+    connection_probability: 0.5
+    duration: 40000  # time units
+
+  # Experiment 2: Varying link probability (Figure 4, 5)
+  varying_link_prob:
+    substrate_nodes: 100
+    arrival_rate: 0.04
+    connection_probabilities: [0.2, 0.5, 0.8]
+    duration: 40000
+
+  # Experiment 3: Varying arrival rate (Figure 6, 7)
+  varying_arrival_rate:
+    substrate_nodes: 100
+    arrival_rates: [0.02, 0.04, 0.06, 0.08, 0.1]
+    connection_probability: 0.5
+    duration: 40000
+
+  # Experiment 4: Varying network size (Figure 8, 9)
+  varying_network_size:
+    substrate_nodes_options: [50, 100, 150]
+    arrival_rate: 0.04
+    connection_probability: 0.5
+    duration: 40000
+
+# Visualization Parameters
+visualization:
+  # Plot style
+  style: "seaborn-v0_8-paper"
+  dpi: 300
+  figure_size: [10, 6]
+
+  # Colors for algorithms
+  colors:
+    RT-CSP+: "#1f77b4"  # Blue
+    RT-CSP: "#ff7f0e"   # Orange
+
+  # Network visualization
+  network_layout: "spring"  # spring, kamada_kawai, circular
+  node_size: 300
+  edge_width: 1.5
+
+  # Dashboard
+  dashboard_port: 8050
+  dashboard_debug: false
