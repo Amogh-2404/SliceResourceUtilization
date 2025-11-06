@@ -47,7 +47,7 @@ This project implements the RT-CSP and RT-CSP+ algorithms for efficient provisio
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/Amogh-2404/SliceResourceUtilization
 cd SliceResourceUtilization
 
 # Install dependencies
@@ -244,7 +244,7 @@ MIT License
 ## Authors
 
 - Original Paper: Li et al. (2019)
-- Implementation: [Your Name]
+- Implementation: R.Amogh
 
 ## Acknowledgments
 
