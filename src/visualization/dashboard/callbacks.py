@@ -68,7 +68,8 @@ def register_callbacks(app):
             Output('toast-container', 'children'),
             Output('progress-container', 'style'),
             Output('simulation-progress', 'value'),
-            Output('progress-text', 'children')
+            Output('progress-text', 'children'),
+            Output('run-button', 'children')
         ],
         [Input('run-button', 'n_clicks')],
         [
@@ -79,11 +80,15 @@ def register_callbacks(app):
             State('arrival-rate-slider', 'value'),
             State('link-prob-slider', 'value')
         ],
-        prevent_initial_call=True
+        prevent_initial_call=True,
+        running=[
+            (Output('run-button', 'disabled'), True, False),
+            (Output('run-button', 'children'), [html.I(className="fas fa-spinner fa-spin me-2"), "Running..."], [html.I(className="fas fa-play me-2"), "Run Simulation"])
+        ]
     )
     def run_simulation(n_clicks, algorithm, topology, num_nodes, num_requests, arrival_rate, link_prob):
         if n_clicks is None:
-            return None, None, "", {'display': 'none'}, None, False, False, None, {'display': 'none'}, 0, ""
+            return None, None, "", {'display': 'none'}, None, False, False, None, {'display': 'none'}, 0, "", [html.I(className="fas fa-play me-2"), "Run Simulation"]
 
         try:
             # Show loading overlay
@@ -155,10 +160,11 @@ def register_callbacks(app):
             ], header=f"{algorithm} Results", icon="success", duration=4000, is_open=True,
                style={"position": "fixed", "top": 80, "right": 20, "minWidth": 350})
 
-            # Hide loading overlay, enable buttons
+            # Hide loading overlay, enable buttons, reset button text
             return (json.dumps(results, default=str), json.dumps(network_data), status,
                     {'display': 'none'}, None, False, False, toast,
-                    {'display': 'none'}, 100, "Complete")
+                    {'display': 'none'}, 100, "Complete",
+                    [html.I(className="fas fa-play me-2"), "Run Simulation"])
 
         except Exception as e:
             # Error status
@@ -178,7 +184,8 @@ def register_callbacks(app):
                style={"position": "fixed", "top": 80, "right": 20, "minWidth": 350})
 
             return (None, None, status, {'display': 'none'}, None, False, False, toast,
-                    {'display': 'none'}, 0, "")
+                    {'display': 'none'}, 0, "",
+                    [html.I(className="fas fa-play me-2"), "Run Simulation"])
 
     # Update metric cards
     @app.callback(
@@ -417,50 +424,53 @@ def register_callbacks(app):
 
         return stats_table
 
-    # Show reset confirmation modal
-    @app.callback(
-        Output('reset-modal', 'is_open'),
-        [Input('reset-button', 'n_clicks'), Input('reset-confirm', 'n_clicks'), Input('reset-cancel', 'n_clicks')],
-        [State('reset-modal', 'is_open')],
-        prevent_initial_call=True
-    )
-    def toggle_reset_modal(reset_click, confirm_click, cancel_click, is_open):
-        from dash.ctx import triggered_id
-
-        if triggered_id == 'reset-button':
-            return True
-        elif triggered_id in ['reset-confirm', 'reset-cancel']:
-            return False
-        return is_open
-
-    # Reset simulation with confirmation
+    # Reset simulation (simplified - direct reset)
     @app.callback(
         [
             Output('simulation-data', 'data', allow_duplicate=True),
             Output('network-data', 'data', allow_duplicate=True),
             Output('simulation-status', 'children', allow_duplicate=True),
-            Output('toast-container', 'children', allow_duplicate=True)
+            Output('toast-container', 'children', allow_duplicate=True),
+            Output('reset-modal', 'is_open')
         ],
-        Input('reset-confirm', 'n_clicks'),
+        [Input('reset-button', 'n_clicks'), Input('reset-confirm', 'n_clicks'), Input('reset-cancel', 'n_clicks')],
+        [State('reset-modal', 'is_open')],
         prevent_initial_call=True
     )
-    def reset_simulation(n_clicks):
-        if n_clicks is None:
-            return None, None, "", None
+    def handle_reset(reset_clicks, confirm_clicks, cancel_clicks, modal_open):
+        import dash
+        ctx = dash.callback_context
 
-        status = dbc.Alert([
-            html.I(className="fas fa-info-circle me-2"),
-            html.Span([
-                html.Strong("Dashboard Reset. "),
-                "Configure parameters and run a new simulation to see results."
-            ])
-        ], color="info", className="fade-in")
+        if not ctx.triggered:
+            return None, None, "", None, False
 
-        # Toast notification
-        toast = dbc.Toast([
-            html.I(className="fas fa-redo me-2 text-info"),
-            "Dashboard has been reset successfully."
-        ], header="Reset Complete", icon="info", duration=3000, is_open=True,
-           style={"position": "fixed", "top": 80, "right": 20, "minWidth": 350})
+        triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
 
-        return None, None, status, toast
+        # If reset button clicked, open modal for confirmation
+        if triggered_id == 'reset-button':
+            return dash.no_update, dash.no_update, dash.no_update, dash.no_update, True
+
+        # If cancel clicked, just close modal
+        if triggered_id == 'reset-cancel':
+            return dash.no_update, dash.no_update, dash.no_update, dash.no_update, False
+
+        # If confirm clicked, reset everything
+        if triggered_id == 'reset-confirm':
+            status = dbc.Alert([
+                html.I(className="fas fa-info-circle me-2"),
+                html.Span([
+                    html.Strong("Dashboard Reset. "),
+                    "Configure parameters and run a new simulation to see results."
+                ])
+            ], color="info", className="fade-in")
+
+            # Toast notification
+            toast = dbc.Toast([
+                html.I(className="fas fa-redo me-2 text-info"),
+                "Dashboard has been reset successfully."
+            ], header="Reset Complete", icon="info", duration=3000, is_open=True,
+               style={"position": "fixed", "top": 80, "right": 20, "minWidth": 350})
+
+            return None, None, status, toast, False
+
+        return None, None, "", None, False

@@ -320,11 +320,15 @@ def create_control_panel():
             # Control buttons
             dbc.Row([
                 dbc.Col([
-                    dbc.Button(
-                        [html.I(className="fas fa-play me-2"), "Run Simulation"],
-                        id='run-button',
-                        color="success",
-                        className="w-100"
+                    dcc.Loading(
+                        id="loading-run-button",
+                        type="default",
+                        children=dbc.Button(
+                            [html.I(className="fas fa-play me-2"), "Run Simulation"],
+                            id='run-button',
+                            color="success",
+                            className="w-100"
+                        )
                     )
                 ], md=6),
                 dbc.Col([
