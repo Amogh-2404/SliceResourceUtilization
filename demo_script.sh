@@ -27,7 +27,7 @@ print_success() {
 }
 
 print_info() {
-    echo -e "${YELLOW}� $1${NC}"
+    echo -e "${YELLOW}� $1${NC}"
 }
 
 print_error() {
@@ -52,14 +52,14 @@ show_main_menu() {
     echo ""
     echo "Choose a demonstration scenario:"
     echo ""
-    echo "  1) Quick 5-minute demo (Dashboard only)"
-    echo "  2) 15-minute technical demo (Examples + Dashboard)"
-    echo "  3) Full demo (Generate figures + Dashboard)"
+    echo "  1) Quick 5-minute demo \(Dashboard only\)"
+    echo "  2) 15-minute technical demo \(Examples + Dashboard\)"
+    echo "  3) Full demo \(Generate figures + Dashboard\)"
     echo "  4) Network visualization demo"
-    echo "  5) Generate all paper figures (takes 10-30 mins)"
+    echo "  5) Generate all paper figures \(takes 10-30 mins\)"
     echo "  6) Launch dashboard only"
     echo "  7) Run simple example"
-    echo "  8) Setup check (verify installation)"
+    echo "  8) Setup check \(verify installation\)"
     echo "  9) Clean output directory"
     echo "  0) Exit"
     echo ""
@@ -99,13 +99,13 @@ quick_demo() {
     print_info "Step 2: Launching Dashboard"
     print_info "The dashboard will open at http://localhost:8050"
     print_info "Try these steps in the browser:"
-    echo "  " Select RT-CSP algorithm"
-    echo "  " Set 50 nodes, 200 requests"
-    echo "  " Click 'Run Simulation'"
-    echo "  " Note the acceptance ratio"
-    echo "  " Click 'Reset'"
-    echo "  " Switch to RT-CSP+"
-    echo "  " Run again and compare results!"
+    echo "  • Select RT-CSP algorithm"
+    echo "  • Set 50 nodes, 200 requests"
+    echo "  • Click 'Run Simulation'"
+    echo "  • Note the acceptance ratio"
+    echo "  • Click 'Reset'"
+    echo "  • Switch to RT-CSP+"
+    echo "  • Run again and compare results!"
     echo ""
     print_info "Press Ctrl+C in this terminal to stop the dashboard when done"
     echo ""
@@ -120,13 +120,13 @@ technical_demo() {
     print_header "15-Minute Technical Demo"
     echo ""
 
-    print_info "Step 1: Quick Example (2 mins)"
+    print_info "Step 1: Quick Example \(2 mins\)"
     print_info "Running comparison between RT-CSP and RT-CSP+..."
     echo ""
     python3 examples/simple_example.py
     press_enter
 
-    print_info "Step 2: Code Overview (Opening key files)"
+    print_info "Step 2: Code Overview \(Opening key files\)"
     echo ""
     echo "Opening main algorithm file..."
     echo "File: src/core/algorithms/rt_csp.py"
@@ -138,9 +138,9 @@ technical_demo() {
     print_info "Launching interactive dashboard..."
     echo ""
     echo "Try comparing different configurations:"
-    echo "  " Different network sizes (20, 50, 100 nodes)"
-    echo "  " Different arrival rates (0.02, 0.04, 0.08)"
-    echo "  " RT-CSP vs RT-CSP+"
+    echo "  • Different network sizes \(20, 50, 100 nodes\)"
+    echo "  • Different arrival rates \(0.02, 0.04, 0.08\)"
+    echo "  • RT-CSP vs RT-CSP+"
     echo ""
     print_info "Press Ctrl+C to stop when done"
     press_enter
@@ -154,7 +154,7 @@ full_demo() {
     print_header "Full Demonstration"
     echo ""
     print_error "WARNING: This will take 10-30 minutes to generate all figures!"
-    read -p "Continue? (y/n): " confirm
+    read -p "Continue? \(y/n\): " confirm
 
     if [ "$confirm" != "y" ]; then
         show_main_menu
@@ -187,10 +187,10 @@ network_viz_demo() {
     echo ""
     print_info "Generating network visualizations..."
     print_info "This will create:"
-    echo "  " Physical network topology"
-    echo "  " Slice request topology"
-    echo "  " Slice-to-physical mapping"
-    echo "  " Resource utilization heatmaps"
+    echo "  • Physical network topology"
+    echo "  • Slice request topology"
+    echo "  • Slice-to-physical mapping"
+    echo "  • Resource utilization heatmaps"
     echo ""
     press_enter
 
@@ -216,11 +216,11 @@ generate_figures() {
     echo ""
     print_error "WARNING: This takes 10-30 minutes!"
     print_info "This will:"
-    echo "  " Run 4 different experiment configurations"
-    echo "  " Compare RT-CSP vs RT-CSP+"
-    echo "  " Generate all 8 figures from the paper"
+    echo "  • Run 4 different experiment configurations"
+    echo "  • Compare RT-CSP vs RT-CSP+"
+    echo "  • Generate all 8 figures from the paper"
     echo ""
-    read -p "Continue? (y/n): " confirm
+    read -p "Continue? \(y/n\): " confirm
 
     if [ "$confirm" != "y" ]; then
         show_main_menu
@@ -299,7 +299,7 @@ setup_check() {
     echo ""
 
     print_info "Testing quick import..."
-    python3 -c "from src.simulation import generate_physical_network; print('Import test passed')" 2>/dev/null
+    python3 -c "from src.simulation import generate_physical_network; print\('Import test passed'\)" 2>/dev/null
     if [ $? -eq 0 ]; then
         print_success "Imports working correctly"
     else
@@ -321,7 +321,7 @@ clean_output() {
     print_header "Clean Output Directory"
     echo ""
     print_error "This will delete all generated figures!"
-    read -p "Are you sure? (y/n): " confirm
+    read -p "Are you sure? \(y/n\): " confirm
 
     if [ "$confirm" != "y" ]; then
         show_main_menu
@@ -332,7 +332,7 @@ clean_output() {
     print_success "Output directory cleaned"
 
     print_info "Also clean Python cache files?"
-    read -p "(y/n): " confirm
+    read -p "\(y/n\): " confirm
 
     if [ "$confirm" == "y" ]; then
         find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null

@@ -55,12 +55,20 @@ def register_callbacks(app):
     def update_link_prob_label(value):
         return f"Link Probability: {value:.1f}"
 
-    # Run simulation
+    # Run simulation with enhanced UX
     @app.callback(
         [
             Output('simulation-data', 'data'),
             Output('network-data', 'data'),
-            Output('simulation-status', 'children')
+            Output('simulation-status', 'children'),
+            Output('loading-overlay', 'style'),
+            Output('loading-overlay', 'children'),
+            Output('run-button', 'disabled'),
+            Output('reset-button', 'disabled'),
+            Output('toast-container', 'children'),
+            Output('progress-container', 'style'),
+            Output('simulation-progress', 'value'),
+            Output('progress-text', 'children')
         ],
         [Input('run-button', 'n_clicks')],
         [
@@ -75,21 +83,30 @@ def register_callbacks(app):
     )
     def run_simulation(n_clicks, algorithm, topology, num_nodes, num_requests, arrival_rate, link_prob):
         if n_clicks is None:
-            return None, None, ""
+            return None, None, "", {'display': 'none'}, None, False, False, None, {'display': 'none'}, 0, ""
 
         try:
-            # Show running status
-            status = dbc.Alert([
-                html.I(className="fas fa-spinner fa-spin me-2"),
-                "Running simulation..."
-            ], color="info")
+            # Show loading overlay
+            loading_overlay = html.Div([
+                html.Div([
+                    html.Div(className="spinner-custom"),
+                    html.H4("Running Simulation...", className="text-primary"),
+                    html.P(f"Provisioning {num_requests} slice requests on {num_nodes} nodes", className="text-muted"),
+                    html.P(f"Algorithm: {algorithm}", className="small text-muted")
+                ], className="loading-content")
+            ], className="loading-overlay")
 
-            # Generate physical network
+            # Progress indication
+            progress_style = {'display': 'block'}
+
+            # Step 1: Generate physical network (20% progress)
             physical_network = generate_physical_network(
                 num_nodes=num_nodes,
                 topology_model=topology,
                 random_seed=42
             )
+            progress_val = 20
+            progress_msg = f"Generated physical network with {physical_network.num_nodes()} nodes"
 
             # Store network data
             network_data = {
@@ -97,38 +114,71 @@ def register_callbacks(app):
                 'num_links': physical_network.num_links()
             }
 
-            # Generate slice requests
+            # Step 2: Generate slice requests (40% progress)
             slice_requests = generate_slice_requests(
                 num_requests=num_requests,
                 arrival_rate=arrival_rate,
                 connection_probability=link_prob,
                 random_seed=42
             )
+            progress_val = 40
+            progress_msg = f"Generated {len(slice_requests)} slice requests"
 
-            # Run simulation
+            # Step 3: Run simulation (80% progress)
             simulator = SliceProvisioningSimulator(
                 physical_network=physical_network,
                 algorithm=algorithm,
                 verbose=False
             )
             simulator.add_slice_requests(slice_requests)
+            progress_val = 60
+            progress_msg = "Running provisioning simulation..."
+
             results = simulator.run()
+            progress_val = 100
+            progress_msg = "Simulation complete!"
 
             # Success status
             status = dbc.Alert([
                 html.I(className="fas fa-check-circle me-2"),
-                f"Simulation completed! Acceptance ratio: {results['metrics']['acceptance_ratio']:.2%}"
-            ], color="success")
+                html.Span([
+                    html.Strong("Success! "),
+                    f"Accepted {results['metrics']['accepted_requests']}/{num_requests} requests ",
+                    f"({results['metrics']['acceptance_ratio']:.1%} acceptance ratio)"
+                ])
+            ], color="success", className="fade-in")
 
-            return json.dumps(results, default=str), json.dumps(network_data), status
+            # Toast notification
+            toast = dbc.Toast([
+                html.I(className="fas fa-check-circle me-2 text-success"),
+                f"Simulation completed successfully!"
+            ], header=f"{algorithm} Results", icon="success", duration=4000, is_open=True,
+               style={"position": "fixed", "top": 80, "right": 20, "minWidth": 350})
+
+            # Hide loading overlay, enable buttons
+            return (json.dumps(results, default=str), json.dumps(network_data), status,
+                    {'display': 'none'}, None, False, False, toast,
+                    {'display': 'none'}, 100, "Complete")
 
         except Exception as e:
             # Error status
             status = dbc.Alert([
                 html.I(className="fas fa-exclamation-triangle me-2"),
-                f"Error: {str(e)}"
-            ], color="danger")
-            return None, None, status
+                html.Span([
+                    html.Strong("Error: "),
+                    str(e)
+                ])
+            ], color="danger", className="fade-in")
+
+            # Error toast
+            toast = dbc.Toast([
+                html.I(className="fas fa-exclamation-triangle me-2 text-danger"),
+                "Simulation failed. Please check parameters."
+            ], header="Error", icon="danger", duration=4000, is_open=True,
+               style={"position": "fixed", "top": 80, "right": 20, "minWidth": 350})
+
+            return (None, None, status, {'display': 'none'}, None, False, False, toast,
+                    {'display': 'none'}, 0, "")
 
     # Update metric cards
     @app.callback(
@@ -367,23 +417,50 @@ def register_callbacks(app):
 
         return stats_table
 
-    # Reset simulation
+    # Show reset confirmation modal
+    @app.callback(
+        Output('reset-modal', 'is_open'),
+        [Input('reset-button', 'n_clicks'), Input('reset-confirm', 'n_clicks'), Input('reset-cancel', 'n_clicks')],
+        [State('reset-modal', 'is_open')],
+        prevent_initial_call=True
+    )
+    def toggle_reset_modal(reset_click, confirm_click, cancel_click, is_open):
+        from dash.ctx import triggered_id
+
+        if triggered_id == 'reset-button':
+            return True
+        elif triggered_id in ['reset-confirm', 'reset-cancel']:
+            return False
+        return is_open
+
+    # Reset simulation with confirmation
     @app.callback(
         [
             Output('simulation-data', 'data', allow_duplicate=True),
             Output('network-data', 'data', allow_duplicate=True),
-            Output('simulation-status', 'children', allow_duplicate=True)
+            Output('simulation-status', 'children', allow_duplicate=True),
+            Output('toast-container', 'children', allow_duplicate=True)
         ],
-        Input('reset-button', 'n_clicks'),
+        Input('reset-confirm', 'n_clicks'),
         prevent_initial_call=True
     )
     def reset_simulation(n_clicks):
         if n_clicks is None:
-            return None, None, ""
+            return None, None, "", None
 
         status = dbc.Alert([
             html.I(className="fas fa-info-circle me-2"),
-            "Dashboard reset. Configure parameters and run a new simulation."
-        ], color="info")
+            html.Span([
+                html.Strong("Dashboard Reset. "),
+                "Configure parameters and run a new simulation to see results."
+            ])
+        ], color="info", className="fade-in")
 
-        return None, None, status
+        # Toast notification
+        toast = dbc.Toast([
+            html.I(className="fas fa-redo me-2 text-info"),
+            "Dashboard has been reset successfully."
+        ], header="Reset Complete", icon="info", duration=3000, is_open=True,
+           style={"position": "fixed", "top": 80, "right": 20, "minWidth": 350})
+
+        return None, None, status, toast
